@@ -1,15 +1,9 @@
 FROM centos:centos6.6
 MAINTAINER Michael Stealey <michael.j.stealey@gmail.com>
 
-RUN echo -e "\
-[EPEL]\n\
-name=Extra Packages for Enterprise Linux \$releasever - \$basearch\n\
-#baseurl=http://download.fedoraproject.org/pub/epel/\$releasever/\$basearch\n\
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-\$releasever&arch=\$basearch\n\
-failovermethod=priority\n\
-enabled=1\n\
-gpgcheck=0\n\
-" >> /etc/yum.repos.d/epel.repo
+RUN yum install -y wget
+RUN wget http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+RUN rpm -Uvh epel-release-6*.rpm
 
 # Install PostgreSQL 9.3.6 pre-requisites
 RUN rpm -ivh http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
@@ -39,12 +33,14 @@ RUN rpm -i $(ls -l | tr -s ' ' | grep irods-icat | cut -d ' ' -f 9)
 # Install irods-database-plugin
 RUN rpm -i $(ls -l | tr -s ' ' | grep irods-database-plugin | cut -d ' ' -f 9)
 
+ADD scripts /scripts
+WORKDIR /scripts
+RUN chmod a+x *.sh
+
 # Open firewall for iRODS
 EXPOSE 1247
-
-#ENTRYPOINT ["/var/lib/irods/packaging/setup_irods.sh"]
-#CMD ["<", "IRODS_CONFIG"]
+ENTRYPOINT [ "/scripts/config-existing-irods.sh" ]
 
 # Keep container from shutting down until explicitly stopped
-ENTRYPOINT ["/usr/bin/tail"]
-CMD ["-f", "/dev/null"]
+#ENTRYPOINT ["/usr/bin/tail"]
+#CMD ["-f", "/dev/null"]
